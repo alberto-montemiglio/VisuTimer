@@ -1,9 +1,7 @@
 # Project Notes and References
 
 ## Getting started with Badger 2040:
-Pimoroni, the board's manufacturer, offers a guide on getting started using it: [Getting Started with Badger 2040](https://learn.pimoroni.com/article/getting-started-with-badger-2040). [Here](https://github.com/pimoroni/badger2040/blob/main/docs/reference.md) is their complete reference and [here](https://github.com/pimoroni/pimoroni-pico/tree/main/micropython/modules/picographics)'s the `picographics` library reference, the library used to display images on screens with MicroPython.
-
-## Raspberry Pi Pico SDK: 
+Pimoroni, the board's manufacturer, offers a guide on getting started using it: [Getting Started with Badger 2040](https://learn.pimoroni.com/article/getting-started-with-badger-2040). [Here](https://github.com/pimoroni/badger2040/blob/main/docs/reference.md) is their complete reference on the board and [here](https://github.com/pimoroni/pimoroni-pico/tree/main/micropython/modules/picographics) is the `picographics` library reference, the library used to display images on screens with MicroPython.
 
 ### Timer Interrupts: 
 References on how to implement timers can be found on the [MicroPython documentation - class Timer](https://docs.micropython.org/en/latest/library/machine.Timer.html#machine.Timer)
