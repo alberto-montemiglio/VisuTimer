@@ -33,15 +33,17 @@ class Screen:
 		self.display = PicoGraphics(display=DISPLAY_INKY_PACK, pen_type=PEN_1BIT)
 		self.WIDTH, self.HEIGHT = self.display.get_bounds()
 		self.display.set_font('bitmap8')
-		self.font_height = 8
+		self.font_height = 16
 		self.timer_position = 0
 		self.bottom_bar_height = bottom_bar_height
 
 	def __display_menu(self, menu_items, padding = 4):
-		text_y_position = self.HEIGHT-self.font_height+padding
-		
+		text_y_position = self.HEIGHT-self.font_height-padding
+		buttons_x_positions = [40, 148, 256]
+		text_x_position = [buttons_x_positions[i]-round(self.display.measure_text(menu_items[i])/2) for i in range(len(menu_items))]
+
 		for index, menu_item in enumerate(menu_items):
-			self.display.text(menu_item, (round(self.WIDTH/3)*index), text_y_position)
+			self.display.text(menu_item, text_x_position[index], text_y_position)
 
 	def __display_logo(self):
 		# TODO: change this to an actual logo
@@ -72,11 +74,16 @@ class Screen:
 
 
 	def display_pause_screen(self):
+		self.__clear_screen()		
 		self.__display_logo()
 		self.__display_menu(['Restart', 'Continue', ''])
+		self.display.update()
 
 	def display_pomodoro_screen(self):
+		self.__clear_screen()
 		self.__display_pomodoro_instruction()
+		self.display.update()
+
 
 	def increase_timer(self):
 		self.timer_position += 1
