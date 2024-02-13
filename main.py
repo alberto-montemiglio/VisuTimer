@@ -42,7 +42,7 @@ class Screen:
 		self.top_bar_height = self.HEIGHT - self.bottom_bar_height
 
 	def __display_menu(self, menu_items):
-		text_y_position = self.HEIGHT-round(1.5*self.font_height)
+		text_y_position = self.HEIGHT-2*self.font_height
 		buttons_x_positions = [40, 148, 256]
 		text_x_position = [buttons_x_positions[i]-round(self.display.measure_text(menu_items[i])/2) for i in range(len(menu_items))]
 
