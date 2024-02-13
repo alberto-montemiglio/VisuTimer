@@ -22,17 +22,17 @@ Change Screen: Blink 'WORK' / 'BREAK'. Use arrows to change. Select. Back to Def
 
 
 '''
-from picographics import PicoGraphics, DISPLAY_INKY_PACK, PEN_1BIT, bitmap8
+from picographics import PicoGraphics, DISPLAY_INKY_PACK, PEN_1BIT
 import jpegdec
 
 
 # Initiate the 296x128 mono E-ink Badger 2040 W display:
 
 class Screen:
-	def __init__(self, bottom_bar_height = 20):
+	def __init__(self, bottom_bar_height = 60):
 		self.display = PicoGraphics(display=DISPLAY_INKY_PACK, pen_type=PEN_1BIT)
 		self.WIDTH, self.HEIGHT = self.display.get_bounds()
-		self.display.set_font(bitmap8)
+		self.display.set_font('bitmap8')
 		self.font_height = 8
 		self.timer_position = 0
 		self.bottom_bar_height = bottom_bar_height
@@ -41,7 +41,7 @@ class Screen:
 		text_y_position = self.HEIGHT-self.font_height+padding
 		
 		for index, menu_item in enumerate(menu_items):
-			self.display.text(menu_item, (self.WIDTH/3*index), text_y_position)
+			self.display.text(menu_item, (round(self.WIDTH/3)*index), text_y_position)
 
 	def __display_logo(self):
 		# TODO: change this to an actual logo
@@ -57,11 +57,19 @@ class Screen:
 		instruction_width = self.display.measure_text(instruction)
 		text_y_position = self.HEIGHT-self.font_height*2+padding
 
-		self.display.text(instruction, self.HEIGHT/2-instruction_width/2, text_y_position, scale = 2)
+		self.display.text(instruction, round(self.HEIGHT/2)-round(instruction_width/2), text_y_position, scale = 2)
+
+	def __clear_screen(self):
+		self.display.set_pen(15)
+		self.display.clear()
+		self.display.set_pen(0)
 
 	def display_home_screen(self):
+		self.__clear_screen()
 		self.__display_logo()
 		self.__display_menu(['Start', '', ''])
+		self.display.update()
+
 
 	def display_pause_screen(self):
 		self.__display_logo()
@@ -84,3 +92,4 @@ class Screen:
 
 home = Screen()
 
+home.display_home_screen()
