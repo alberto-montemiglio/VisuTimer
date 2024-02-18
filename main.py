@@ -25,7 +25,8 @@ Change Screen: Blink 'WORK' / 'BREAK'. Use arrows to change. Select. Back to Def
 from picographics import PicoGraphics, DISPLAY_INKY_PACK, PEN_1BIT
 import badger2040
 import jpegdec
-from machine import Pin
+from machine import Pin, Timer
+from time import sleep_ms
 
 
 # Initiate the 296x128 mono E-ink Badger 2040 W display:
@@ -49,10 +50,29 @@ class visuTimer:
 		self.display.set_font('bitmap8')
 		self.font_height = 8
 
-
-		self.timer_position = 0
+		# Initialise Buzzer Pin
+		self.buzzer_Pin = Pin(28, Pin.OUT)    # create output pin on GPIO28 (Which is free)
+	
+		# Define timer parameters
+		self.work_period = 25*60 # duration of work session in [s]
+		self.break_period = 5*60 # duration of break session in [s]
+		self.update_period = 10 # Screen update period in [s]
 		
-
+		button_map_function = {
+			'home': {
+				'butt_A': 'runTimer',
+				'butt_B': '',
+				'butt_C': ''
+				},
+			'run': 	{
+				'butt_A': 'pauseScreen',
+				'butt_B': 'pauseScreen',
+				'butt_C': 'pauseScreen'},
+			'pause': {
+				'butt_A': 'home',
+				'butt_B': 'continue',
+				'butt_C': ''},
+		}
 
 		# Interrupts:
 	# 	button_A = Pin(badger2040.BUTTON_A,Pin.IN,Pin.PULL_UP)
@@ -73,6 +93,74 @@ class visuTimer:
 		# }
 
 		# '''
+	def __drawProgressBar(self, start, width):
+		
+		# Draw a background white rectangle
+		self.display.set_pen(15) # White pen
+		self.display.rectangle(0, 0, self.WIDTH, self.top_bar_height)
+
+		# Draw the progress bar: 
+		self.display.set_pen(0) # Black pen
+		self.display.rectangle(start, 0, width, self.top_bar_height)
+		
+		# Update Screen
+		self.badger.set_update_speed(3)
+		self.badger.partial_update(0, 0, self.WIDTH, self.top_bar_height)
+		self.badger.set_update_speed(0)
+
+	def ringTimer(self):
+		for i in range(5):
+			self.buzzer_Pin.on()
+			self.badger.LED.on()
+			sleep_ms(500)
+			self.buzzer_Pin.off()
+			self.badger.LED.off()
+			sleep_ms(100)
+
+
+	def __increaseTimer(self):
+
+
+		if not self.timer_stop_flag: # Run the following only if the timer has not been paused
+			self.time_elapsed = self.time_elapsed + self.update_period
+			if self.current_session == 'break':
+				if self.time_elapsed < self.break_period:
+					progress_bar_width = round(self.WIDTH*self.time_elapsed/self.work_period)
+					__drawProgressBar(start = self.WIDTH - progress_bar_width, width = progress_bar_width)
+				else: 
+					ringTimer()
+					self.current_session == 'work'
+			else: 
+				if self.time_elapsed < self.work_period:
+					progress_bar_width = round(self.WIDTH*self.time_elapsed/self.work_period)
+					__drawProgressBar(start = 0, width = progress_bar_width)
+				else: 
+					ringTimer()
+					self.current_session == 'break'
+
+
+
+	def startTimer(self):
+		# Show Timer Page
+		# drawPomodoroScreen()
+
+		# Start Timer
+		self.time_elapsed = 0 # Minutes Passed
+		self.tim = Timer().init( period=100000, callback=__increaseTimer() ) # Update Timer every 10 sec
+
+	def stopTimer(self):
+		self.timer_stop_flag = 1
+
+	def continueTimer(self):
+		self.timer_stop_flag = 1
+
+	def endTimer(self):
+		self.tim.deinit()
+
+	
+
+
+
 
 	def __draw_menu(self, menu_items):
 		buttons_x_pos = [40, 148, 256] # Buttons positions wrt the screen [px]
@@ -164,6 +252,7 @@ class visuTimer:
 		self.display.set_pen(0)
 
 
+def main(): 
 
 visuTimer = visuTimer()
 
