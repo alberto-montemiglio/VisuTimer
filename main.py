@@ -95,7 +95,8 @@ class visuTimer:
 
 		# Start Timer
 		self.time_elapsed = 0 # Minutes Passed
-		self.tim = Timer().init( period=self.update_period*1000, callback=self.__increaseTimer ) # Update Timer every 10 sec
+		self.tim = Timer()
+		self.tim.init( period=self.update_period*1000, callback=self.__increaseTimer ) # Update Timer every 10 sec
 
 	def pauseTimer(self):
 
@@ -218,9 +219,9 @@ class visuTimer:
 		self.ledPin = Pin(badger2040.LED, Pin.OUT)	# create output pin on GPIO22 (Which has the LED)
 
 		# Define timer parameters
-		self.work_period = 0.25*60 # duration of work session in [s]
-		self.break_period = 0.25*60 # duration of break session in [s]
-		self.update_period = 5 # Screen update period in [s]
+		self.work_period = 10 # duration of work session in [s]
+		self.break_period = 10 # duration of break session in [s]
+		self.update_period = 4 # Screen update period in [s]
 		self.timer_stop_flag = 0 # Set timer to active
 		self.current_session = 'WORK' # Start with a work session
 
