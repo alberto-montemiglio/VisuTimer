@@ -27,7 +27,7 @@ import badger2040
 import jpegdec
 from machine import Pin, Timer
 from time import sleep_ms
-
+import micropython
 
 # Initiate the 296x128 mono E-ink Badger 2040 W display:
 
@@ -38,25 +38,33 @@ class visuTimer:
 		self.badger = badger2040.Badger2040()
 		self.badger.set_update_speed(0)
 
-		# Initialise the display:
+		# Instantiate PicoGraphics:
 		self.display = PicoGraphics(display=DISPLAY_INKY_PACK, pen_type=PEN_1BIT)
+
+		# Initialise Font
+		self.display.set_font('bitmap8')
+		self.font_height = 8
+
+		# Set Up Display
 		self.WIDTH, self.HEIGHT = self.display.get_bounds()
 		self.bottom_bar_height = 4*self.font_height
 		self.top_bar_height = self.HEIGHT - self.bottom_bar_height
 		self.screen_displayed = 'home'
 
 
-		# Initialise Font
-		self.display.set_font('bitmap8')
-		self.font_height = 8
+
 
 		# Initialise Buzzer Pin
 		self.buzzer_Pin = Pin(28, Pin.OUT)    # create output pin on GPIO28 (Which is free)
-	
+		self.ledPin = Pin(22, Pin.OUT)	# create output pin on GPIO22 (Which has the LED)
+
 		# Define timer parameters
-		self.work_period = 25*60 # duration of work session in [s]
-		self.break_period = 5*60 # duration of break session in [s]
-		self.update_period = 10 # Screen update period in [s]
+		self.work_period = 0.25*60 # duration of work session in [s]
+		self.break_period = 0.25*60 # duration of break session in [s]
+		self.update_period = 5 # Screen update period in [s]
+		self.timer_stop_flag = 0 # Set timer to active
+		self.current_session = 'WORK' # Start with a work session
+
 		
 		button_map_function = {
 			'home': {
@@ -75,11 +83,8 @@ class visuTimer:
 		}
 
 		# Interrupts:
-	# 	button_A = Pin(badger2040.BUTTON_A,Pin.IN,Pin.PULL_UP)
-
-	# 	Pin.irq(handler=None, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
-		
-	# 	button_A.irq(handler=None, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
+		# button_A = Pin(badger2040.BUTTON_A,Pin.IN,Pin.PULL_UP)		
+		# button_A.irq(handler=None, trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING)
 
 	# def __button_A(self):
 	# 	self.UI_map[self.screen_displayed][button_A]
@@ -94,6 +99,9 @@ class visuTimer:
 
 		# '''
 	def __drawProgressBar(self, start, width):
+
+		# Speed up screen updating
+		self.badger.set_update_speed(3)
 		
 		# Draw a background white rectangle
 		self.display.set_pen(15) # White pen
@@ -104,55 +112,63 @@ class visuTimer:
 		self.display.rectangle(start, 0, width, self.top_bar_height)
 		
 		# Update Screen
+		self.display.update()
+		
+		# Revert to normal update speed
 		self.badger.set_update_speed(3)
-		self.badger.partial_update(0, 0, self.WIDTH, self.top_bar_height)
-		self.badger.set_update_speed(0)
+
+
 
 	def ringTimer(self):
 		for i in range(5):
 			self.buzzer_Pin.on()
-			self.badger.LED.on()
+			self.ledPin.on()
 			sleep_ms(500)
 			self.buzzer_Pin.off()
-			self.badger.LED.off()
+			self.ledPin.off()
 			sleep_ms(100)
 
 
-	def __increaseTimer(self):
-
-
+	def __increaseTimer(self, timer):
+		print('Maybe Increasing Timer')
 		if not self.timer_stop_flag: # Run the following only if the timer has not been paused
+			print('Increasing Timer')
 			self.time_elapsed = self.time_elapsed + self.update_period
-			if self.current_session == 'break':
-				if self.time_elapsed < self.break_period:
-					progress_bar_width = round(self.WIDTH*self.time_elapsed/self.work_period)
-					__drawProgressBar(start = self.WIDTH - progress_bar_width, width = progress_bar_width)
-				else: 
-					ringTimer()
-					self.current_session == 'work'
+			if self.current_session == 'BREAK':
+				print('in break')
+				progress_bar_width = round(self.WIDTH*self.time_elapsed/self.work_period)
+				self.__drawProgressBar(start = self.WIDTH - progress_bar_width, width = progress_bar_width)
+				if self.time_elapsed >= self.break_period:
+					print('finished break')
+					self.ringTimer()
+					self.current_session = 'WORK'
+					self.time_elapsed = 0
 			else: 
-				if self.time_elapsed < self.work_period:
-					progress_bar_width = round(self.WIDTH*self.time_elapsed/self.work_period)
-					__drawProgressBar(start = 0, width = progress_bar_width)
-				else: 
-					ringTimer()
-					self.current_session == 'break'
+				print('in work')
+				progress_bar_width = round(self.WIDTH*self.time_elapsed/self.work_period)
+				self.__drawProgressBar(start = 0, width = progress_bar_width)
+				if self.time_elapsed >= self.work_period:
+					print('finished work')
+					self.ringTimer()
+					self.current_session = 'BREAK'
+					self.time_elapsed = 0
 
 
 
 	def startTimer(self):
 		# Show Timer Page
-		# drawPomodoroScreen()
+		self.display_pomodoro_screen(self.current_session)
 
 		# Start Timer
 		self.time_elapsed = 0 # Minutes Passed
-		self.tim = Timer().init( period=100000, callback=__increaseTimer() ) # Update Timer every 10 sec
+		print("declaring a timer")
+		self.tim = Timer().init( period=self.update_period*1000, callback=self.__increaseTimer ) # Update Timer every 10 sec
 
 	def stopTimer(self):
 		self.timer_stop_flag = 1
 
 	def continueTimer(self):
-		self.timer_stop_flag = 1
+		self.timer_stop_flag = 0
 
 	def endTimer(self):
 		self.tim.deinit()
@@ -175,23 +191,6 @@ class visuTimer:
 		# TODO: change this to an actual logo
 		self.display.text("VisuTimer", 10, 10, scale=2)
 
-	def __draw_pomodoro_instruction(self, instruction):
-		# Draw a black rectangle on the bottom of the screen
-		self.display.set_pen(0)
-		self.display.rectangle(0, self.HEIGHT - self.bottom_bar_height, self.WIDTH, self.bottom_bar_height)
-
-		# Write the Instruction in white
-		instruction_width = self.display.measure_text(instruction)
-		text_y_position = self.HEIGHT-3*self.font_height
-		text_x_position = round(self.WIDTH/2)-round(instruction_width/2)
-		
-		self.display.set_pen(15)
-		self.display.text(instruction, text_x_position, text_y_position, scale = 2)
-
-		# Revert to black pen
-		# self.display.set_pen(0)
-
-
 	def clear_screen(self):
 		self.display.set_pen(15)
 		self.display.clear()
@@ -209,7 +208,6 @@ class visuTimer:
 		self.__draw_menu(['Start', '', ''])
 		self.display.update()
 
-
 	def display_pause_screen(self):
 		self.clear_screen()		
 		self.__draw_logo()
@@ -218,41 +216,23 @@ class visuTimer:
 
 	def display_pomodoro_screen(self, instruction):
 		self.clear_screen()
-		self.__draw_pomodoro_instruction(instruction)
-		self.display.update()
-
-
-	def increase_timer(self):
-		self.timer_position += 1
-
-		self.display.set_pen(0) # Set pen back to black
-		self.display.rectangle(0, 0, self.timer_position, self.top_bar_height)
-		
-		self.badger.set_update_speed(3)
-		# self.badger.partial_update(self.timer_position-1, 0, 1, self.top_bar_height)
-		self.display.set_pen(15) # Set pen to white
-		self.badger.partial_update(0, 0, self.timer_position, self.top_bar_height)
-		
-		# self.badger.update()
-		# self.display.update()
-
-		self.badger.set_update_speed(0)
-
-
-	def decrease_timer(self):
-		self.timer_position -= 1
-		self.display.set_pen(15) # Set pen to white
-		self.display.line(self.timer_position, 0, self.timer_position, self.HEIGHT - self.bottom_bar_height)
-		self.display.update()
-		self.display.set_pen(0) # Set pen back to black
-
-	def clear_screen(self):
-		self.display.set_pen(15)
-		self.display.clear()
+		# Draw a black rectangle on the bottom of the screen
 		self.display.set_pen(0)
+		self.display.rectangle(0, self.HEIGHT - self.bottom_bar_height, self.WIDTH, self.bottom_bar_height)
+
+		# Write the Instruction in white
+		instruction_width = self.display.measure_text(instruction)
+		text_y_position = self.HEIGHT-3*self.font_height
+		text_x_position = round(self.WIDTH/2)-round(instruction_width/2)
+		
+		self.display.set_pen(15)
+		self.display.text(instruction, text_x_position, text_y_position, scale = 2)
+
+		self.display.update()
 
 
-def main(): 
 
+
+micropython.alloc_emergency_exception_buf(100)
 visuTimer = visuTimer()
-
+visuTimer.startTimer()
