@@ -1,12 +1,12 @@
 # Project Notes and References
-
+> Below is a list of all the resources I have used to make this project. Everything regarding the project, except for knowledge of Python, is contained in one of the resources below.
 
 ## Getting started with Badger 2040:
 - [Link](https://shop.pimoroni.com/products/badger-2040-w?variant=40514062188627) to buy
 - Pimoroni, the board's manufacturer, offers a guide on getting started using the board: [Getting Started with Badger 2040](https://learn.pimoroni.com/article/getting-started-with-badger-2040). 
 - [Here](https://github.com/pimoroni/badger2040/blob/main/docs/reference.md) is their complete reference on the board
 - [here](https://github.com/pimoroni/pimoroni-pico/tree/main/micropython/modules/picographics) is the `picographics` library reference, the library used to display images on screens with MicroPython.
-
+- [Here](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html) is the documentation for the Raspberry Pi Pico, the board the Badger 2040W is based on.
 
 ## Useful micropython features: 
 
